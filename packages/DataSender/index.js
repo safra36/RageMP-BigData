@@ -11,13 +11,19 @@ var BigData = require('./Clothes.json')
     "DATA_FLOAT":"number"
 } */
 
-mp.events.add('GetBigData', (player) => {
+// mp.events.add('GetBigData', (player) => {
 
-    mp.events.callBig(player, 'GetBigData', JSON.stringify(BigData));
+//     mp.events.callBig(player, 'GetBigData', JSON.stringify(BigData));
 
-})
+// })
 
 
+
+mp.players.callBig = (eventName, Data) => {
+    mp.players.forEach(_player => {
+        _player.callBig(eventName, Data)
+    });
+}
 
 mp.events.add('playerReady', (player) => {
 
