@@ -15,28 +15,24 @@ mp.events.add('DataReceiver:Init', (id, type, eventName) => {
 
     var ChuckBucket = [];
     var DataHandler = new mp.Event('DataReceiver:Receive', (dataId, data, endSig, index) => {
-        if(endSig)
-        {
-            ChuckBucket.push({
-                index:index,
-                data:data
-            });
-            
 
-            DataHandler_CreateStringBucket(ChuckBucket, (StringData) => {
-                mp.events.call(eventName, StringData);
-            })
-            
-            DataHandler.destroy();
-        }
         if(dataId == id)
         {
-            mp.gui.chat.push(`Receicing data of index: ${index}`);
             ChuckBucket.push({
                 index:index,
                 data:data
             });
+
+            if(endSig)
+            {        
+                DataHandler_CreateStringBucket(ChuckBucket, (StringData) => {
+                    mp.events.call(eventName, StringData);
+                })
+                
+                DataHandler.destroy();
+            }
         }
+        
     })
 
 });
