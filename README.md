@@ -7,13 +7,13 @@ for obvious reasons i made this only to go from server-side to client-side and n
 
 ```js
 /*
-    @player -> player object
+    @player -> valid muliplayer player object
     @eventName -> the event which is defined on client-side (just a normal event name)
     @Data -> it must be an string, if you are sending big json data just stringify it then parse it on client-side agian.
 
     ! no arguments are supported, the only thing you can pass is only a big data (no limit)
  */
-mp.events.callBig(player, eventName, Data)
+player.callBig(player, eventName, Data)
 ```
 
 
