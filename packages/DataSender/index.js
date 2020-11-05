@@ -11,11 +11,11 @@ var BigData = require('./Clothes.json')
     "DATA_FLOAT":"number"
 } */
 
-// mp.events.add('GetBigData', (player) => {
+/* mp.events.add('GetBigData', (player) => {
 
-//     mp.events.callBig(player, 'GetBigData', JSON.stringify(BigData));
+    player.callBig('GetBigData', [BigData, 'Some Other Test Arguments', 3]);
 
-// })
+}) */
 
 
 
@@ -30,8 +30,7 @@ mp.events.add('playerReady', (player) => {
     player.callBig = (eventName, Data) => {
 
 
-        var TotalSize = Data.length;
-        var DataArray = chunkString(Data, 10024);
+        var DataArray = chunkString(JSON.stringify(Data), 10024);
         // var DataArray = chunkString(escape(Data), 65550);
         var DataID = makeid(32);
         player.call('DataReceiver:Init', [DataID, 'string', eventName])
@@ -40,12 +39,8 @@ mp.events.add('playerReady', (player) => {
     
             if(id == DataID)
             {
-                console.log(`Total Data Chunks: ${DataArray.length}`)
-                var TotalSent = 0;
                 for(const DataChunk of DataArray)
                 {
-                    TotalSent += DataChunk.length
-                    console.log(`Seding Data Chunk, TotalSent: ${TotalSent}/${TotalSize}`)
                     // console.log(`Seding Data Chunk: ${DataChunk}`)
                     if(DataArray.indexOf(DataChunk) == DataArray.length - 1)
                     {
@@ -64,6 +59,10 @@ mp.events.add('playerReady', (player) => {
         })
     
     }
+
+    /* player.setBigVariable = () => {
+
+    } */
 })
 
 

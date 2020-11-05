@@ -25,8 +25,8 @@ mp.events.add('DataReceiver:Init', (id, type, eventName) => {
 
             if(endSig)
             {        
-                DataHandler_CreateStringBucket(ChuckBucket, (StringData) => {
-                    mp.events.call(eventName, StringData);
+                DataHandler_CreateDataStructure(ChuckBucket, (StringData) => {
+                    mp.events.call(eventName, ...StringData);
                 })
                 
                 DataHandler.destroy();
@@ -116,7 +116,7 @@ mp.events.add('DataReceiver:Init', (id, type, eventName) => {
     callback(JSON.parse(JSONString))
 } */
 
-function DataHandler_CreateStringBucket(BucketArray, callback)
+function DataHandler_CreateDataStructure(BucketArray, callback)
 {
     var DataString = '';
     var BucketClone = BucketArray
@@ -130,7 +130,7 @@ function DataHandler_CreateStringBucket(BucketArray, callback)
         DataString += chunk.data;
     }
     
-    callback(DataString)
+    callback(JSON.parse(DataString))
 }
 
 
