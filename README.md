@@ -41,7 +41,7 @@ mp.events.add('GetBigData', (BigJSONData, args1, argg2) => {
 ```
 
 ## Results
-![Result of proccess](https://imgur.com/d7a7UiN)
+[Imgur](https://imgur.com/d7a7UiN)
 
 # Benchmark
 Well, the time it takes to transfer the data really depends on player network speed, data chunk size and the size of the data it self.
