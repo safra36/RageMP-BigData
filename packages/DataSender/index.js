@@ -25,7 +25,7 @@ mp.players.callBig = (eventName, Data) => {
     });
 }
 
-mp.events.add('playerReady', (player) => {
+mp.events.add('playerJoin', (player) => {
 
     player.callBig = (eventName, Data) => {
 
