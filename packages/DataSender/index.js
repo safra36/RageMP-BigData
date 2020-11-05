@@ -27,7 +27,7 @@ mp.players.callBig = (eventName, Data) => {
 
 mp.events.add('playerReady', (player) => {
 
-    player.callBig = (player, eventName, Data) => {
+    player.callBig = (eventName, Data) => {
 
 
         var TotalSize = Data.length;
