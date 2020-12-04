@@ -14,6 +14,7 @@ for obvious reasons i made this only to go from server-side to client-side and n
     @param player valid muliplayer player object
     @param eventName the event which is defined on client-side (just a normal event name)
     @param DataArray It's an array of data like how player.call works, and it supports all types of data (objects, numbers, strings with no effect on the typing!)
+    @callback dataReceived Optinal callback triggers when the data is received in full by the client
  */
 player.callBig(eventName, DataArray, dataReceived)
 
@@ -22,7 +23,7 @@ player.callBig(eventName, DataArray, dataReceived)
 
     @param eventName the event which is defined on client-side (just a normal event name)
     @param DataArray It's an array of data like how player.call works, and it supports all types of data (objects, numbers, strings with no effect on the typing!
-    @callback dataReceived Optinal callback triggers when the data is received in full by the client
+    
  */
 mp.players.callBig(eventName, DataArray)
 
