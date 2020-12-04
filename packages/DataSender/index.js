@@ -1,7 +1,7 @@
 
 
 
-// var BigData = require('./Clothes.json')
+var BigData = require('./Clothes.json')
 
 /* var dataTypes = {
     "DATA_JSON":"object",
@@ -28,7 +28,9 @@ mp.players.callBig = (eventName, ...Data) => {
 
 mp.events.add('playerJoin', (player) => {
 
-    player.callBig = (eventName, Data) => {
+    player.callBig = (eventName, Data, dataReceived) => {
+
+        if(!Array.isArray(Data)) throw new Error('Data must be an array of data')
 
         var DataArray = chunkString(JSON.stringify(Data), 10024);
         var DataID = makeid(32);
@@ -53,14 +55,95 @@ mp.events.add('playerJoin', (player) => {
                 }
 
 
+                var DataSenderEnd = new mp.Event('DataSender:End', (__player, endId, _eventName) => {
+
+                    console.log(`Data Tansmission end request: ${endId}`)
+
+                    if (id == endId && eventName == _eventName) {
+                        console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${_eventName}`)
+                        DataSenderEnd.destroy();
+                        if(dataReceived) dataReceived();
+                    }
+
+                })
+
+
+                var DataSenderFailed = new mp.Event('DataSender:Failed', (__player, endId, _eventName, errorCode) => {
+
+                    console.log(`Data Tansmission fail request: ${endId} ${JSON.stringify(errorCode)}`)
+
+                    if (id == endId && eventName == _eventName) {
+                        console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${_eventName}`)
+                        console.log(`Retrying ...`)
+
+                        if(dataReceived) __player.callBig(eventName, Data, dataReceived);
+                        else __player.callBig(eventName, Data);
+
+                        DataSenderEnd.destroy();
+                        DataSenderFailed.destroy();
+                    }
+
+                })
 
             }
+
+
+
         })
 
     }
 
+
+
+    // Promisifed callBig
+    /* player.callBig = (eventName, Data) => {
+
+        return new Promise((resolve, reject) => {
+
+            var DataArray = chunkString(JSON.stringify(Data), 10024);
+            var DataID = makeid(32);
+
+            player.call('DataReceiver:Init', [DataID, 'string', eventName])
+
+            var DataSender = new mp.Event('DataSender:InitSuccess', (_player, id) => {
+
+                if (id == DataID) {
+                    for (const DataChunk of DataArray) {
+                        // console.log(`Seding Data Chunk: ${DataChunk}`)
+                        if (DataArray.indexOf(DataChunk) == DataArray.length - 1) {
+                            _player.call('DataReceiver:Receive', [DataID, DataChunk, 1, DataArray.indexOf(DataChunk)])
+                            DataSender.destroy();
+                            break;
+                        }
+                        else {
+                            _player.call('DataReceiver:Receive', [DataID, DataChunk, 0, DataArray.indexOf(DataChunk)])
+                        }
+
+                        // await timer(50);
+                    }
+
+
+                    var DataSenderEnd = new mp.Event('DataSender:End', (__player, endId, eventName) => {
+
+                        console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${name}`)
+
+                        if (id == endId && eventName == name) {          
+                            DataSenderEnd.destroy();
+                            resolve();
+                        }
+
+                    })
+
+
+                }
+            })
+
+        })
+
+    } */
+
     // Currently only on the player, not a shared data
-    player.setBigVariable = (name, data) => {
+    player.setBigVariable = (name, data, dataReceived) => {
 
         var SharedDataObject = {
             name: name,
@@ -101,11 +184,13 @@ mp.events.add('playerJoin', (player) => {
 
                     x.DataSenderEnd = new mp.Event('DataSender:End', (__player, endId, eventName) => {
 
-                        console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${name}`)
+                        console.log(`Data Tansmission end request: ${endId}`)
 
                         if (id == endId && eventName == name) {
+                            console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${name}`)
                             var EntityDataIndex = DataHadnler_DoesEntityOfTypeHasData(player.id, 'player', name);
                             if (EntityDataIndex != -1 && EntitySharedVariables[EntityDataIndex] != undefined) {
+                                delete EntitySharedVariables[EntityDataIndex].data;
                                 EntitySharedVariables[EntityDataIndex].data = SharedDataObject.data;
                             }
                             else {
@@ -113,9 +198,31 @@ mp.events.add('playerJoin', (player) => {
                             }
 
                             x.DataSenderEnd.destroy();
+
+                            if(dataReceived) dataReceived();
                         }
 
                     })
+
+
+                    if (x.DataSenderFailed != null) x.DataSenderFailed.destroy();
+                    x.DataSenderFailed = new mp.Event('DataSender:Failed', (__player, endId, eventName, errorCode) => {
+
+                        console.log(`Data Tansmission fail request: ${endId}`)
+
+                        if (id == endId && eventName == name) {
+                            console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${name}`)
+                            console.log(`Retrying ...`)
+
+                            if(dataReceived) player.setBigVariable(name, data, dataReceived);
+                            else player.setBigVariable(name, data);
+
+                            x.DataSenderEnd.destroy();
+                            x.DataSenderFailed.destroy();
+                        }
+
+                    })
+                    
 
                 }
             })
@@ -133,6 +240,92 @@ mp.events.add('playerJoin', (player) => {
         else {
             return undefined;
         }
+
+    }
+
+
+
+
+    player.privateData = {};
+    player.setPrivateData = (name, data, dataReceived) => {
+
+            var PreData;
+
+            if(typeof(data) == 'object') PreData = JSON.stringify(data);
+            else PreData = data;
+
+            var DataArray = chunkString(PreData, 10024);
+            var DataID = makeid(32);
+
+            // Sync the data to everyone on the server
+            player.call('DataReceiver:PrivateData:Init', [DataID, name])
+
+            var DataSender = new mp.Event('DataSender:InitSuccess', (_player, id) => {
+                if (id == DataID) 
+                {
+                    for (const DataChunk of DataArray) 
+                    {
+                        // console.log(`Seding Data Chunk: ${DataChunk}`)
+                        if (DataArray.indexOf(DataChunk) == DataArray.length - 1) 
+                        {
+                            _player.call('DataReceiver:Receive', [DataID, DataChunk, 1, DataArray.indexOf(DataChunk)])
+                            DataSender.destroy();
+                            break;
+                        }
+                        else {
+                            _player.call('DataReceiver:Receive', [DataID, DataChunk, 0, DataArray.indexOf(DataChunk)])
+                        }
+
+                    }
+
+                var DataSenderEnd = new mp.Event('DataSender:End', (__player, endId, eventName) => {
+
+                    console.log(`Data Tansmission end request: ${id} - ${endId} - ${eventName} - ${name}`)
+
+                    if (id == endId && eventName == name) {
+                        console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${name}`)
+                        
+                        if(player.privateData[name] == undefined) player.privateData[name] = data;
+                        else
+                        {
+                            delete player.privateData[name];
+                            player.privateData[name] = data;
+                        }
+                        DataSenderEnd.destroy();
+
+                        if(dataReceived) dataReceived();
+                    }
+
+                })
+
+
+                var DataSenderFailed = new mp.Event('DataSender:Failed', (__player, endId, eventName, errorCode) => {
+
+                    console.log(`Data Tansmission fail request: ${endId}`)
+
+                    if (id == endId && eventName == name) {
+                        console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${name}`)
+                        console.log(`Retrying ...`)
+
+                        if(dataReceived) player.setPrivateData(name, data, dataReceived);
+                        else player.setPrivateData(name, data);
+
+                        DataSenderEnd.destroy();
+                        DataSenderFailed.destroy();
+                    }
+
+                })
+                
+
+            }
+        })
+
+    }
+
+    player.deletePrivateData = (name) => {
+
+        if(player.privateData[name]) delete player.privateData[name];
+        player.call('DataReceiver:PrivateData:Delete', [name]);
 
     }
 })
@@ -319,3 +512,45 @@ function chunkString(str, size) {
 } */
 
 const timer = ms => new Promise(res => setTimeout(res, ms))
+
+
+
+// mp.events.addCommand("test", (player, fullText, somevar) => {
+
+//     var someTestBigData = {
+//         somedata:somevar
+//     }
+
+//     /* player.setBigVariable('clothes', BigData, () => {
+//         console.log(`Data`)
+//     }) */
+
+//     // player.setBigVariable('clothes', BigData);
+
+//     // player.callBig('GetBigData', [BigData])
+
+//     player.setPrivateData('clothes', BigData, () => {
+//         console.log(`Data is final`)
+//     })
+
+
+
+// });
+
+
+// mp.events.addCommand("test2", (player, fullText) => {
+
+//     console.log(player.privateData['clothes'])
+//     player.call('TestPrivateData');
+
+
+
+// });
+
+// mp.events.addCommand("test3", (player, fullText) => {
+
+//     player.deletePrivateData('clothes')
+
+// });
+
+

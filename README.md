@@ -11,33 +11,53 @@ for obvious reasons i made this only to go from server-side to client-side and n
 /*
     Send a big data to a player
 
-    @player -> valid muliplayer player object
-    @eventName -> the event which is defined on client-side (just a normal event name)
-    @DataArray -> It's an array of data like how player.call works, and it supports all types of data (objects, numbers, strings with no effect on the typing!)
+    @param player valid muliplayer player object
+    @param eventName the event which is defined on client-side (just a normal event name)
+    @param DataArray It's an array of data like how player.call works, and it supports all types of data (objects, numbers, strings with no effect on the typing!)
  */
-player.callBig(eventName, DataArray)
+player.callBig(eventName, DataArray, dataReceived)
 
 /*
     Send a big data to all players
 
-    @eventName -> the event which is defined on client-side (just a normal event name)
-    @DataArray -> It's an array of data like how player.call works, and it supports all types of data (objects, numbers, strings with no effect on the typing!
+    @param eventName the event which is defined on client-side (just a normal event name)
+    @param DataArray It's an array of data like how player.call works, and it supports all types of data (objects, numbers, strings with no effect on the typing!
+    @callback dataReceived Optinal callback triggers when the data is received in full by the client
  */
 mp.players.callBig(eventName, DataArray)
 
 /*
     Set a big shared variable on players
 
-    @name -> name of the data
-    @data -> any type of data
+    @param name name of the data
+    @param data any type of data
+    @callback dataReceived Optinal callback triggers when the data is received in full by the client
  */
-player.setBigVariable(name, data)
+player.setBigVariable(name, data, dataReceived)
 
 /*
     Get a previously set shared data on the client
-    @name -> name of the data
+    @param name name of the data
  */
 player.getBigVariable(name)
+
+/*
+    Set a big private data on client which is only set on a certain client, access it on server-side with player.privateData[dataName]
+
+    @param name name of the data
+    @param data any type of data
+    @callback dataReceived Optinal callback triggers when the data is received in full by the client
+ */
+player.setPrivateData(name, data, dataReceived)
+
+
+/*
+    Delete private data on server-side and client-side
+
+    @param name name of the data
+ */
+player.deletePrivateData(name) 
+
 ```
 
 ## Server-Side Events
@@ -45,11 +65,20 @@ player.getBigVariable(name)
 /*
     Detemine if a data has been fully received by the client
 
-    @player playerObject which has sent this signal
-    @id Id of the data sending session
-    @eventName Name of the even you have been called on the client previously using callBig
+    @param player playerObject which has sent this signal
+    @param id Id of the data sending session
+    @param eventName Name of the even you have been called on the client previously using callBig
  */
 mp.events.add('DataSender:End', (player, id, eventName) => {})
+
+/*
+    This will be called when the sent data was failed (there is an auto retry to put the data on player for sure but see this as a notification)
+
+    @param id Id of the data sending session
+    @param dataName Name of the data you have been set on the client
+    @param errorCode -1 Means the data could not be parsed on client, -2 means there was some data chunks lost on the send proccess
+ */
+mp.events.add('DataSender:Failed', (id, dataName, errorCode) => {})
 ```
 
 ## Client-Side Functions
@@ -57,23 +86,36 @@ mp.events.add('DataSender:End', (player, id, eventName) => {})
 /*
     Get a shared variable of a player
 
-    @name data name that was set on the player
+    @param name data name that was set on the player
  */
 player.getBigVariable(name)
 ```
+
+## Client-Side Variables
+- You can get client private data using `mp.players.local.privateData[dataName]`
 
 ## Client-Side Events
 ```js
 /*
     Get notified when a shared data get's updated on server-side
 
-    @dataName shared data name
-    @entityId id of the entity which this it's shared data has been updated (currently it's only a player)
-    @type get type of entity which is updated (player, object, vehicle, ped but currenly it's only player)
-    @oldData previously set data if it's forst time then it's undefined
-    @newData the latest data has been set on this name
+    @param dataName shared data name
+    @param entityId id of the entity which this it's shared data has been updated (currently it's only a player)
+    @param type get type of entity which is updated (player, object, vehicle, ped but currenly it's only player)
+    @param oldData previously set data if it's forst time then it's undefined
+    @param newData the latest data has been set on this name
  */
 mp.events.addBigDataHandler(dataName, (entityId, type, oldData, newData) => {})
+
+/*
+    Get notified when a shared data get's updated on server-side
+
+    @param dataName private data name
+    @param oldData previously set data if it's forst time then it's undefined
+    @param newData the latest data has been set on this name
+ */
+mp.events.addPrivateDataHandler(dataName, (oldData, newData) => {})
+
 ```
 
 # Example (BigData Event Sample)
