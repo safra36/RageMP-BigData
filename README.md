@@ -8,7 +8,7 @@ for obvious reasons i made this only to go from server-side to client-side and n
 
 ## Server-Side Functions
 ```js
-/*
+/**
     Send a big data to a player
 
     @param player valid muliplayer player object
@@ -17,7 +17,7 @@ for obvious reasons i made this only to go from server-side to client-side and n
  */
 player.callBig(eventName, DataArray, dataReceived)
 
-/*
+/**
     Send a big data to all players
 
     @param eventName the event which is defined on client-side (just a normal event name)
@@ -26,7 +26,7 @@ player.callBig(eventName, DataArray, dataReceived)
  */
 mp.players.callBig(eventName, DataArray)
 
-/*
+/**
     Set a big shared variable on players
 
     @param name name of the data
@@ -35,13 +35,13 @@ mp.players.callBig(eventName, DataArray)
  */
 player.setBigVariable(name, data, dataReceived)
 
-/*
+/**
     Get a previously set shared data on the client
     @param name name of the data
  */
 player.getBigVariable(name)
 
-/*
+/**
     Set a big private data on client which is only set on a certain client, access it on server-side with player.privateData[dataName]
 
     @param name name of the data
@@ -51,7 +51,7 @@ player.getBigVariable(name)
 player.setPrivateData(name, data, dataReceived)
 
 
-/*
+/**
     Delete private data on server-side and client-side
 
     @param name name of the data
@@ -62,7 +62,7 @@ player.deletePrivateData(name)
 
 ## Server-Side Events
 ```js
-/*
+/**
     Detemine if a data has been fully received by the client
 
     @param player playerObject which has sent this signal
@@ -71,7 +71,7 @@ player.deletePrivateData(name)
  */
 mp.events.add('DataSender:End', (player, id, eventName) => {})
 
-/*
+/**
     This will be called when the sent data was failed (there is an auto retry to put the data on player for sure but see this as a notification)
 
     @param id Id of the data sending session
@@ -83,7 +83,7 @@ mp.events.add('DataSender:Failed', (id, dataName, errorCode) => {})
 
 ## Client-Side Functions
 ```js
-/*
+/**
     Get a shared variable of a player
 
     @param name data name that was set on the player
@@ -96,7 +96,7 @@ player.getBigVariable(name)
 
 ## Client-Side Events
 ```js
-/*
+/**
     Get notified when a shared data get's updated on server-side
 
     @param dataName shared data name
@@ -107,7 +107,7 @@ player.getBigVariable(name)
  */
 mp.events.addBigDataHandler(dataName, (entityId, type, oldData, newData) => {})
 
-/*
+/**
     Get notified when a shared data get's updated on server-side
 
     @param dataName private data name
