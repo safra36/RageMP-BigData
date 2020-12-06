@@ -171,3 +171,8 @@ For testing, i sent a very big json file contaning all rage-mp clothing with the
 - Copy all the files to your packages/client-packages
 - Make sure to add the client-side file to your index.js
 - Enjoy!
+
+
+
+# Known Issues
+- If your data fails and you set a new data which does not fail, the old data is probably gonna replace the new data over retry
