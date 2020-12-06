@@ -15,7 +15,7 @@ for obvious reasons i made this only to go from server-side to client-side and n
     @param eventName the event which is defined on client-side (just a normal event name)
     @param DataArray It's an array of data like how player.call works, and it supports all types of data (objects, numbers, strings with no effect on the typing!)
     @callback dataReceived Optional callback triggers when the data is received in full by the client
-    @param retry Optional param which is true by default, pass false to disable auto retry (this will cause the data to be lost added as request but don't use it!)
+    @param retry Optional param which is true by default, pass false to disable auto retry (this will cause the data to be lost, added by request but don't use it!)
  */
 player.callBig(eventName, DataArray, dataReceived, &retry)
 
@@ -34,7 +34,7 @@ mp.players.callBig(eventName, DataArray)
     @param name name of the data
     @param data any type of data
     @callback dataReceived Optinal callback triggers when the data is received in full by the client
-    @param retry Optional param which is true by default, pass false to disable auto retry (this will cause the data to be lost added as request but don't use it!)
+    @param retry Optional param which is true by default, pass false to disable auto retry (this will cause the data to be lost, added by request but don't use it!)
  */
 player.setBigVariable(name, data, dataReceived, &retry)
 
@@ -51,7 +51,7 @@ player.getBigVariable(name)
     @param name name of the data
     @param data any type of data
     @callback dataReceived Optinal callback triggers when the data is received in full by the client
-    @param retry Optional param which is true by default, pass false to disable auto retry (this will cause the data to be lost added as request but don't use it!)
+    @param retry Optional param which is true by default, pass false to disable auto retry (this will cause the data to be lost, added by request but don't use it!)
     
  */
 player.setPrivateData(name, data, dataReceived, &retry)
@@ -65,6 +65,23 @@ player.setPrivateData(name, data, dataReceived, &retry)
  */
 player.deletePrivateData(name) 
 
+```
+
+
+## Server-Side Variables
+```js
+/**
+ * Setter
+ * Sets private data on client like setPrivateData but without optional retry
+ */
+player.pdata.dataName = value
+
+
+/**
+ * Getter
+ * Get private data which was set, must be used with await since the data may take time to reach client;
+ */
+var data = await player.pdata.dataName;
 ```
 
 ## Server-Side Events

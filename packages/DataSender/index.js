@@ -256,14 +256,29 @@ mp.events.add('playerJoin', (player) => {
     player.privateData = {};
 
     player.pdata = new Proxy(player.privateData, {
+        lastValue: 0,
         set:(target, key, value) => {
             player.setPrivateData(key, value, () => {
                 target[key] = value;
+                this.lastValue = value;
             });
         },
         deleteProperty(target, key) {
             player.deletePrivateData(key);
             delete target[key];
+        },
+        get:(target, key) => {
+            return new Promise(resolve => {
+                var dataChecker = setInterval(() => {
+
+                    if(target[key] != undefined && target[key] == this.lastValue)
+                    {
+                        clearInterval(dataChecker);
+                        resolve(target[key])
+                    }
+                    
+                }, 1);
+            })
         }
     })
 
@@ -538,7 +553,7 @@ const timer = ms => new Promise(res => setTimeout(res, ms))
 
 
 
-// mp.events.addCommand("test", (player, fullText, somevar) => {
+// mp.events.addCommand("test", async (player, fullText, somevar) => {
 
 //     var someTestBigData = {
 //         somedata:somevar
@@ -557,6 +572,13 @@ const timer = ms => new Promise(res => setTimeout(res, ms))
 //     // })
 
 //     player.pdata.clothes = BigData;
+
+//     var Clothes = await player.pdata.clothes;
+//     console.log(`Clohtes: ${Clothes}`);
+
+//     // player.pdata.clothes.then((Clothes) => {
+//     //     console.log(`Clohtes: ${Clothes}`);
+//     // })
 
 
 

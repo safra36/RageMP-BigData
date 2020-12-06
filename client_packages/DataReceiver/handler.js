@@ -495,11 +495,11 @@ mp.events.add('GetBigData', (data) => {
 }) */
 
 
-// mp.events.addPrivateDataHandler('clothes', (oldData, newData) => {
-//     mp.gui.chat.push(`${typeof(oldData)} - ${typeof(newData)}`);
-// })
+mp.events.addPrivateDataHandler('clothes', (oldData, newData) => {
+    mp.gui.chat.push(`${typeof(oldData)} - ${typeof(newData)}`);
+})
 
 
-// mp.events.add('TestPrivateData', () => {
-//     mp.gui.chat.push(`Data IN NAME: ${mp.players.local.privateData['clothes']['Tops']['Male']['NONE'][0].name}`);
-// })
+mp.events.add('TestPrivateData', () => {
+    mp.gui.chat.push(`Data IN NAME: ${mp.players.local.privateData['clothes']['Tops']['Male']['NONE'][0].name}`);
+})
