@@ -28,7 +28,7 @@ mp.players.callBig = (eventName, ...Data) => {
 
 mp.events.add('playerJoin', (player) => {
 
-    player.callBig = (eventName, Data, dataReceived) => {
+    player.callBig = (eventName, Data, dataReceived, retry=1) => {
 
         if(!Array.isArray(Data)) throw new Error('Data must be an array of data')
 
@@ -74,10 +74,13 @@ mp.events.add('playerJoin', (player) => {
 
                     if (id == endId && eventName == _eventName) {
                         console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${_eventName}`)
-                        console.log(`Retrying ...`)
-
-                        if(dataReceived) __player.callBig(eventName, Data, dataReceived);
-                        else __player.callBig(eventName, Data);
+                        
+                        if(retry)
+                        {
+                            console.log(`Retrying ...`)
+                            if(dataReceived) __player.callBig(eventName, Data, dataReceived);
+                            else __player.callBig(eventName, Data);
+                        }
 
                         DataSenderEnd.destroy();
                         DataSenderFailed.destroy();
@@ -143,7 +146,7 @@ mp.events.add('playerJoin', (player) => {
     } */
 
     // Currently only on the player, not a shared data
-    player.setBigVariable = (name, data, dataReceived) => {
+    player.setBigVariable = (name, data, dataReceived, retry=1) => {
 
         var SharedDataObject = {
             name: name,
@@ -212,10 +215,13 @@ mp.events.add('playerJoin', (player) => {
 
                         if (id == endId && eventName == name) {
                             console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${name}`)
-                            console.log(`Retrying ...`)
-
-                            if(dataReceived) player.setBigVariable(name, data, dataReceived);
-                            else player.setBigVariable(name, data);
+                            
+                            if(retry)
+                            {
+                                console.log(`Retrying ...`)
+                                if(dataReceived) player.setBigVariable(name, data, dataReceived);
+                                else player.setBigVariable(name, data);
+                            }
 
                             x.DataSenderEnd.destroy();
                             x.DataSenderFailed.destroy();
@@ -246,8 +252,22 @@ mp.events.add('playerJoin', (player) => {
 
 
 
+    player.pdata = {};
     player.privateData = {};
-    player.setPrivateData = (name, data, dataReceived) => {
+
+    player.pdata = new Proxy(player.privateData, {
+        set:(target, key, value) => {
+            player.setPrivateData(key, value, () => {
+                target[key] = value;
+            });
+        },
+        deleteProperty(target, key) {
+            player.deletePrivateData(key);
+            delete target[key];
+        }
+    })
+
+    player.setPrivateData = (name, data, dataReceived, retry=1) => {
 
             var PreData;
 
@@ -305,10 +325,13 @@ mp.events.add('playerJoin', (player) => {
 
                     if (id == endId && eventName == name) {
                         console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${name}`)
-                        console.log(`Retrying ...`)
-
-                        if(dataReceived) player.setPrivateData(name, data, dataReceived);
-                        else player.setPrivateData(name, data);
+                        
+                        if(retry)
+                        {
+                            console.log(`Retrying ...`)
+                            if(dataReceived) player.setPrivateData(name, data, dataReceived);
+                            else player.setPrivateData(name, data);
+                        }
 
                         DataSenderEnd.destroy();
                         DataSenderFailed.destroy();
@@ -529,9 +552,11 @@ const timer = ms => new Promise(res => setTimeout(res, ms))
 
 //     // player.callBig('GetBigData', [BigData])
 
-//     player.setPrivateData('clothes', BigData, () => {
-//         console.log(`Data is final`)
-//     })
+//     // player.setPrivateData('clothes', BigData, () => {
+//     //     console.log(`Data is final`)
+//     // })
+
+//     player.pdata.clothes = BigData;
 
 
 
@@ -540,7 +565,7 @@ const timer = ms => new Promise(res => setTimeout(res, ms))
 
 // mp.events.addCommand("test2", (player, fullText) => {
 
-//     console.log(player.privateData['clothes'])
+//     console.log(player.pdata.clothes)
 //     player.call('TestPrivateData');
 
 
@@ -549,7 +574,8 @@ const timer = ms => new Promise(res => setTimeout(res, ms))
 
 // mp.events.addCommand("test3", (player, fullText) => {
 
-//     player.deletePrivateData('clothes')
+//     // player.deletePrivateData('clothes')
+//     delete player.pdata.clothes;
 
 // });
 

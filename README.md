@@ -14,9 +14,10 @@ for obvious reasons i made this only to go from server-side to client-side and n
     @param player valid muliplayer player object
     @param eventName the event which is defined on client-side (just a normal event name)
     @param DataArray It's an array of data like how player.call works, and it supports all types of data (objects, numbers, strings with no effect on the typing!)
-    @callback dataReceived Optinal callback triggers when the data is received in full by the client
+    @callback dataReceived Optional callback triggers when the data is received in full by the client
+    @param retry Optional param which is true by default, pass false to disable auto retry (this will cause the data to be lost added as request but don't use it!)
  */
-player.callBig(eventName, DataArray, dataReceived)
+player.callBig(eventName, DataArray, dataReceived, &retry)
 
 /**
     Send a big data to all players
@@ -33,8 +34,9 @@ mp.players.callBig(eventName, DataArray)
     @param name name of the data
     @param data any type of data
     @callback dataReceived Optinal callback triggers when the data is received in full by the client
+    @param retry Optional param which is true by default, pass false to disable auto retry (this will cause the data to be lost added as request but don't use it!)
  */
-player.setBigVariable(name, data, dataReceived)
+player.setBigVariable(name, data, dataReceived, &retry)
 
 /**
     Get a previously set shared data on the client
@@ -44,12 +46,16 @@ player.getBigVariable(name)
 
 /**
     Set a big private data on client which is only set on a certain client, access it on server-side with player.privateData[dataName]
+    You can use player.pdata.name instead from 0.0.3
 
     @param name name of the data
     @param data any type of data
     @callback dataReceived Optinal callback triggers when the data is received in full by the client
+    @param retry Optional param which is true by default, pass false to disable auto retry (this will cause the data to be lost added as request but don't use it!)
+    
  */
-player.setPrivateData(name, data, dataReceived)
+player.setPrivateData(name, data, dataReceived, &retry)
+
 
 
 /**
