@@ -1,5 +1,5 @@
 
-
+// "use strict";
 
 var BigData = require('./Clothes.json')
 
@@ -57,10 +57,10 @@ mp.events.add('playerJoin', (player) => {
 
                 var DataSenderEnd = new mp.Event('DataSender:End', (__player, endId, _eventName) => {
 
-                    console.log(`Data Tansmission end request: ${endId}`)
+                    // console.log(`Data Tansmission end request: ${endId}`)
 
                     if (id == endId && eventName == _eventName) {
-                        console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${_eventName}`)
+                        // console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${_eventName}`)
                         DataSenderEnd.destroy();
                         if(dataReceived) dataReceived();
                     }
@@ -70,14 +70,14 @@ mp.events.add('playerJoin', (player) => {
 
                 var DataSenderFailed = new mp.Event('DataSender:Failed', (__player, endId, _eventName, errorCode) => {
 
-                    console.log(`Data Tansmission fail request: ${endId} ${JSON.stringify(errorCode)}`)
+                    // console.log(`Data Tansmission fail request: ${endId} ${JSON.stringify(errorCode)}`)
 
                     if (id == endId && eventName == _eventName) {
-                        console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${_eventName}`)
+                        // console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${_eventName}`)
                         
                         if(retry)
                         {
-                            console.log(`Retrying ...`)
+                            // console.log(`Retrying ...`)
                             if(dataReceived) __player.callBig(eventName, Data, dataReceived);
                             else __player.callBig(eventName, Data);
                         }
@@ -187,10 +187,10 @@ mp.events.add('playerJoin', (player) => {
 
                     x.DataSenderEnd = new mp.Event('DataSender:End', (__player, endId, eventName) => {
 
-                        console.log(`Data Tansmission end request: ${endId}`)
+                        // console.log(`Data Tansmission end request: ${endId}`)
 
                         if (id == endId && eventName == name) {
-                            console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${name}`)
+                            // console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${name}`)
                             var EntityDataIndex = DataHadnler_DoesEntityOfTypeHasData(player.id, 'player', name);
                             if (EntityDataIndex != -1 && EntitySharedVariables[EntityDataIndex] != undefined) {
                                 delete EntitySharedVariables[EntityDataIndex].data;
@@ -211,14 +211,14 @@ mp.events.add('playerJoin', (player) => {
                     if (x.DataSenderFailed != null) x.DataSenderFailed.destroy();
                     x.DataSenderFailed = new mp.Event('DataSender:Failed', (__player, endId, eventName, errorCode) => {
 
-                        console.log(`Data Tansmission fail request: ${endId}`)
+                        // console.log(`Data Tansmission fail request: ${endId}`)
 
                         if (id == endId && eventName == name) {
-                            console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${name}`)
+                            // console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${name}`)
                             
                             if(retry)
                             {
-                                console.log(`Retrying ...`)
+                                // console.log(`Retrying ...`)
                                 if(dataReceived) player.setBigVariable(name, data, dataReceived);
                                 else player.setBigVariable(name, data);
                             }
@@ -254,13 +254,21 @@ mp.events.add('playerJoin', (player) => {
 
     player.pdata = {};
     player.privateData = {};
+    player.lastValue = 0;
+    player.hasPending = [];
 
     player.pdata = new Proxy(player.privateData, {
-        lastValue: 0,
         set:(target, key, value) => {
+            // console.log(player.hasPending)
+            // console.log(player.lastValue)
+
+            if(player.hasPending.includes(key)) throw new Error("Cannot change value of pending data.")
+
+            player.hasPending.push(key);
             player.setPrivateData(key, value, () => {
                 target[key] = value;
-                this.lastValue = value;
+                player.lastValue = value;
+                player.hasPending.splice(player.hasPending.indexOf(key), 1);
             });
         },
         deleteProperty(target, key) {
@@ -268,16 +276,22 @@ mp.events.add('playerJoin', (player) => {
             delete target[key];
         },
         get:(target, key) => {
-            return new Promise(resolve => {
+            return new Promise((resolve, reject) => {
+                var tries = 0;
                 var dataChecker = setInterval(() => {
 
-                    if(target[key] != undefined && target[key] == this.lastValue)
+                    if(tries > 1000) reject();
+                    if(target[key] != undefined && target[key] == player.lastValue)
                     {
                         clearInterval(dataChecker);
                         resolve(target[key])
                     }
+                    else
+                    {
+                        tries++;
+                    }
                     
-                }, 1);
+                }, 10);
             })
         }
     })
@@ -298,8 +312,11 @@ mp.events.add('playerJoin', (player) => {
             var DataSender = new mp.Event('DataSender:InitSuccess', (_player, id) => {
                 if (id == DataID) 
                 {
+                    // console.log(`6`)
+
                     for (const DataChunk of DataArray) 
                     {
+                        // console.log(`7`)
                         // console.log(`Seding Data Chunk: ${DataChunk}`)
                         if (DataArray.indexOf(DataChunk) == DataArray.length - 1) 
                         {
@@ -315,10 +332,12 @@ mp.events.add('playerJoin', (player) => {
 
                 var DataSenderEnd = new mp.Event('DataSender:End', (__player, endId, eventName) => {
 
-                    console.log(`Data Tansmission end request: ${id} - ${endId} - ${eventName} - ${name}`)
+                    // console.log(`8`)
+
+                    // console.log(`Data Tansmission end request: ${id} - ${endId} - ${eventName} - ${name}`)
 
                     if (id == endId && eventName == name) {
-                        console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${name}`)
+                        // console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${name}`)
                         
                         if(player.privateData[name] == undefined) player.privateData[name] = data;
                         else
@@ -326,7 +345,10 @@ mp.events.add('playerJoin', (player) => {
                             delete player.privateData[name];
                             player.privateData[name] = data;
                         }
+
                         DataSenderEnd.destroy();
+                        DataSenderFailed.destroy();
+                        DataSender.destroy();
 
                         if(dataReceived) dataReceived();
                     }
@@ -336,20 +358,23 @@ mp.events.add('playerJoin', (player) => {
 
                 var DataSenderFailed = new mp.Event('DataSender:Failed', (__player, endId, eventName, errorCode) => {
 
-                    console.log(`Data Tansmission fail request: ${endId}`)
+                    // console.log(`9`)
+
+                    // console.log(`Data Tansmission fail request: ${endId}`)
 
                     if (id == endId && eventName == name) {
-                        console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${name}`)
+                        // console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${name}`)
                         
                         if(retry)
                         {
-                            console.log(`Retrying ...`)
+                            // console.log(`Retrying ...`)
                             if(dataReceived) player.setPrivateData(name, data, dataReceived);
                             else player.setPrivateData(name, data);
                         }
 
                         DataSenderEnd.destroy();
                         DataSenderFailed.destroy();
+
                     }
 
                 })
@@ -513,7 +538,7 @@ function DataHadnler_DoesEntityOfTypeHasData(entityId, entityType, dataName) {
 
 function DataHandler_GetAllEntityDataOfType(entityId, entityType)
 {
-    console.log(JSON.stringify(EntitySharedVariables))
+    // console.log(JSON.stringify(EntitySharedVariables))
     var ReturnArray = [];
     for (const PlayerDataObject of EntitySharedVariables) {
         if (PlayerDataObject.id == entityId && PlayerDataObject.type == entityType) {
@@ -571,10 +596,23 @@ const timer = ms => new Promise(res => setTimeout(res, ms))
 //     //     console.log(`Data is final`)
 //     // })
 
-//     player.pdata.clothes = BigData;
+//     try
+//     {
+//         player.pdata.clothes = BigData;
+//     }
+//     catch(e)
+//     {
+//         console.log(`Error: ${e}`)
+//     }
 
-//     var Clothes = await player.pdata.clothes;
-//     console.log(`Clohtes: ${Clothes}`);
+//     try
+//     {
+//         var Clothes = await player.pdata.clothes;
+//         console.log(`Clohtes: ${Clothes}`);
+//     }catch(e)
+//     {
+//         console.log(`failed to fetch the value`);
+//     }
 
 //     // player.pdata.clothes.then((Clothes) => {
 //     //     console.log(`Clohtes: ${Clothes}`);
@@ -585,10 +623,28 @@ const timer = ms => new Promise(res => setTimeout(res, ms))
 // });
 
 
-// mp.events.addCommand("test2", (player, fullText) => {
+// mp.events.addCommand("test2", async (player, fullText) => {
 
-//     console.log(player.pdata.clothes)
-//     player.call('TestPrivateData');
+//     // console.log(player.pdata.clothes)
+//     // player.call('TestPrivateData');
+
+//     try
+//     {
+//         player.pdata.test2 = BigData;
+//     }
+//     catch(e)
+//     {
+//         console.log(`Error: ${e}`)
+//     }
+
+//     try
+//     {
+//         var Clothes = await player.pdata.test2;
+//         console.log(`Clohtes2: ${Clothes}`);
+//     }catch(e)
+//     {
+//         console.log(`failed to fetch the value`);
+//     }
 
 
 

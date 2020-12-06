@@ -94,8 +94,11 @@ mp.events.add('DataReceiver:SharedData:Init', (id, type, entityId, dataName) => 
                     {
                         for(const DataHandlerObject of BigDataHandlers)
                         {
-                            var functionExec = DataHandlerObject.func;
-                            functionExec(entityId, type, EntitySharedData[SharedDataIndex].data, StringData.data);
+                            if(DataHandlerObject.name == dataName)
+                            {
+                                var functionExec = DataHandlerObject.func;
+                                functionExec(entityId, type, EntitySharedData[SharedDataIndex].data, StringData.data);
+                            }
                         }
                         
                         // Object.assign(EntitySharedData[SharedDataIndex].data, StringData.data)
@@ -122,7 +125,7 @@ mp.events.add('DataReceiver:PrivateData:Init', (id, dataName) => {
     mp.events.callRemote('DataSender:InitSuccess', id);
 
     var ChuckBucket = [];
-    var DataHandler = new mp.Event('DataReceiver:Receive', (dataId, data, endSig, index) => {
+    var DataHandler = new mp.Event('DataReceiver:Receive', async (dataId, data, endSig, index) => {
 
         if(dataId == id)
         {
@@ -134,14 +137,18 @@ mp.events.add('DataReceiver:PrivateData:Init', (id, dataName) => {
             if(endSig)
             {    
 
+                // add proc and is seesion valid if yes procceed
                 DataHandler_CreateDataStructure(ChuckBucket).then((StringData) => {
 
                     mp.events.callRemote('DataSender:End', id, dataName)
 
                     for(const DataHandlerObject of PrivateDataHandler)
                     {
-                        var functionExec = DataHandlerObject.func;
-                        functionExec(mp.players.local.privateData[dataName], StringData);
+                        if(DataHandlerObject.name == dataName)
+                        {
+                            var functionExec = DataHandlerObject.func;
+                            functionExec(mp.players.local.privateData[dataName], StringData);
+                        }
                     }
 
                     if(mp.players.local.privateData[dataName] == undefined)
@@ -158,6 +165,7 @@ mp.events.add('DataReceiver:PrivateData:Init', (id, dataName) => {
                 }).catch((errorCode) => {
                     mp.events.callRemote('DataSender:Failed', id, dataName, errorCode)
                 })
+                
                 
                 DataHandler.destroy();
             }
@@ -495,11 +503,11 @@ mp.events.add('GetBigData', (data) => {
 }) */
 
 
-mp.events.addPrivateDataHandler('clothes', (oldData, newData) => {
-    mp.gui.chat.push(`${typeof(oldData)} - ${typeof(newData)}`);
-})
+// mp.events.addPrivateDataHandler('clothes', (oldData, newData) => {
+//     mp.gui.chat.push(`${typeof(oldData)} - ${typeof(newData)}`);
+// })
 
 
-mp.events.add('TestPrivateData', () => {
-    mp.gui.chat.push(`Data IN NAME: ${mp.players.local.privateData['clothes']['Tops']['Male']['NONE'][0].name}`);
-})
+// mp.events.add('TestPrivateData', () => {
+//     mp.gui.chat.push(`Data IN NAME: ${mp.players.local.privateData['clothes']['Tops']['Male']['NONE'][0].name}`);
+// })
