@@ -28,9 +28,9 @@ mp.players.callBig = (eventName, ...Data) => {
 
 mp.events.add('playerJoin', (player) => {
 
-    player.callBig = (eventName, Data, dataReceived, retry=1) => {
+    player.callBig = (eventName, Data, dataReceived, retry = 1) => {
 
-        if(!Array.isArray(Data)) throw new Error('Data must be an array of data')
+        if (!Array.isArray(Data)) throw new Error('Data must be an array of data')
 
         var DataArray = chunkString(JSON.stringify(Data), 10024);
         var DataID = makeid(32);
@@ -40,15 +40,16 @@ mp.events.add('playerJoin', (player) => {
         var DataSender = new mp.Event('DataSender:InitSuccess', (_player, id) => {
 
             if (id == DataID) {
+                console.log(`Seding Data Of Type: ${typeof(Data)}`)
                 for (const DataChunk of DataArray) {
-                    // console.log(`Seding Data Chunk: ${DataChunk}`)
+                    
                     if (DataArray.indexOf(DataChunk) == DataArray.length - 1) {
-                        _player.call('DataReceiver:Receive', [DataID, DataChunk, 1, DataArray.indexOf(DataChunk)])
+                        _player.call('DataReceiver:Receive', [DataID, DataChunk, 1, DataArray.indexOf(DataChunk), typeof(Data)])
                         DataSender.destroy();
                         break;
                     }
                     else {
-                        _player.call('DataReceiver:Receive', [DataID, DataChunk, 0, DataArray.indexOf(DataChunk)])
+                        _player.call('DataReceiver:Receive', [DataID, DataChunk, 0, DataArray.indexOf(DataChunk), typeof(Data)])
                     }
 
                     // await timer(50);
@@ -57,12 +58,13 @@ mp.events.add('playerJoin', (player) => {
 
                 var DataSenderEnd = new mp.Event('DataSender:End', (__player, endId, _eventName) => {
 
-                    // console.log(`Data Tansmission end request: ${endId}`)
+                    console.log(`Data Tansmission end request: ${endId}`)
 
                     if (id == endId && eventName == _eventName) {
-                        // console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${_eventName}`)
+                        console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${_eventName}`)
                         DataSenderEnd.destroy();
-                        if(dataReceived) dataReceived();
+                        DataSenderFailed.destroy();
+                        if (dataReceived) dataReceived();
                     }
 
                 })
@@ -70,15 +72,14 @@ mp.events.add('playerJoin', (player) => {
 
                 var DataSenderFailed = new mp.Event('DataSender:Failed', (__player, endId, _eventName, errorCode) => {
 
-                    // console.log(`Data Tansmission fail request: ${endId} ${JSON.stringify(errorCode)}`)
+                    console.log(`Data Tansmission fail request: ${endId} ${JSON.stringify(errorCode)} - ${errorCode}`)
 
                     if (id == endId && eventName == _eventName) {
-                        // console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${_eventName}`)
-                        
-                        if(retry)
-                        {
+                        console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${_eventName}`)
+
+                        if (retry) {
                             // console.log(`Retrying ...`)
-                            if(dataReceived) __player.callBig(eventName, Data, dataReceived);
+                            if (dataReceived) __player.callBig(eventName, Data, dataReceived);
                             else __player.callBig(eventName, Data);
                         }
 
@@ -146,7 +147,7 @@ mp.events.add('playerJoin', (player) => {
     } */
 
     // Currently only on the player, not a shared data
-    player.setBigVariable = (name, data, dataReceived, retry=1) => {
+    player.setBigVariable = (name, data, dataReceived, retry = 1) => {
 
         var SharedDataObject = {
             name: name,
@@ -172,12 +173,12 @@ mp.events.add('playerJoin', (player) => {
                     for (const DataChunk of DataArray) {
                         // console.log(`Seding Data Chunk: ${DataChunk}`)
                         if (DataArray.indexOf(DataChunk) == DataArray.length - 1) {
-                            _player.call('DataReceiver:Receive', [DataID, DataChunk, 1, DataArray.indexOf(DataChunk)])
+                            _player.call('DataReceiver:Receive', [DataID, DataChunk, 1, DataArray.indexOf(DataChunk), typeof(data)])
                             x.DataSender.destroy();
                             break;
                         }
                         else {
-                            _player.call('DataReceiver:Receive', [DataID, DataChunk, 0, DataArray.indexOf(DataChunk)])
+                            _player.call('DataReceiver:Receive', [DataID, DataChunk, 0, DataArray.indexOf(DataChunk), typeof(data)])
                         }
 
                     }
@@ -202,7 +203,7 @@ mp.events.add('playerJoin', (player) => {
 
                             x.DataSenderEnd.destroy();
 
-                            if(dataReceived) dataReceived();
+                            if (dataReceived) dataReceived();
                         }
 
                     })
@@ -215,11 +216,10 @@ mp.events.add('playerJoin', (player) => {
 
                         if (id == endId && eventName == name) {
                             // console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${name}`)
-                            
-                            if(retry)
-                            {
+
+                            if (retry) {
                                 // console.log(`Retrying ...`)
-                                if(dataReceived) player.setBigVariable(name, data, dataReceived);
+                                if (dataReceived) player.setBigVariable(name, data, dataReceived);
                                 else player.setBigVariable(name, data);
                             }
 
@@ -228,7 +228,7 @@ mp.events.add('playerJoin', (player) => {
                         }
 
                     })
-                    
+
 
                 }
             })
@@ -249,58 +249,211 @@ mp.events.add('playerJoin', (player) => {
 
     }
 
+    var x = {
+        get: () => {
 
+        }
+    };
 
 
     player.pdata = {};
     player.privateData = {};
-    player.lastValue = 0;
     player.hasPending = [];
+    player.lastValues = {};
 
     player.pdata = new Proxy(player.privateData, {
-        set:(target, key, value) => {
+        set: (target, key, value) => {
             // console.log(player.hasPending)
             // console.log(player.lastValue)
 
-            if(player.hasPending.includes(key)) throw new Error("Cannot change value of pending data.")
+            // console.log(`Setting Private Data ${key}`)
+            // console.log(`PendingData: ${player.hasPending} - ${player.hasPending.length}`)
+            if (player.hasPending.length > 0) {
+                console.log(`Length > 0`)
+                for (const pendingData of player.hasPending) {
+                    if (pendingData.key == key) throw new Error("Cannot change value of pending data.")
 
-            player.hasPending.push(key);
-            player.setPrivateData(key, value, () => {
-                target[key] = value;
-                player.lastValue = value;
-                player.hasPending.splice(player.hasPending.indexOf(key), 1);
+                    player.lastValues[key] = value;
+
+                    player.hasPending.push({
+                        key: key,
+                        value: value
+                    });
+
+                    player.setPrivateData(pendingData.key, pendingData.value, () => {
+                        target[pendingData.key] = pendingData.value;
+                        player.hasPending.splice(player.hasPending.indexOf(pendingData), 1);
+                    });
+
+                }
+
+                return true;
+            }
+            else {
+                // console.log(`Length < 0`)
+                player.lastValues[key] = value;
+
+                // console.log(`Player Values: ${JSON.stringify(player.lastValues)}`)
+
+
+                player.hasPending.push({
+                    key: key,
+                    value: value
+                });
+
+                console.log(`Updated Has Pending Data: ${JSON.stringify(player.hasPending)}`)
+
+                
+                player.setPrivateData(player.hasPending[0].key, player.hasPending[0].value, () => {
+                    target[player.hasPending[0].key] = player.hasPending[0].value;
+                    player.hasPending.splice(0, 1);
+
+                    /* console.log(`pdata: ${JSON.stringify(player.pdata[key])}`)
+                    console.log(`pdata: ${JSON.stringify(player.privateData[key])}`)
+                    console.log(`pdata: ${JSON.stringify(target[key])}`)
+
+                    console.log(`Shit is done!`) */
+                });
+
+                return true;
+            }
+
+
+            //  throw new Error("Cannot change value of pending data.")
+
+            /* this.lastValue = value;
+
+            player.hasPending.push({
+                key:key,
+                value:value
             });
+
+            player.setPrivateData(player.hasPending[0].key, player.hasPending[0].value, () => {
+                target[player.hasPending[0].key] = player.hasPending[0].value;
+                player.hasPending.splice(0, 1);
+            }); */
         },
         deleteProperty(target, key) {
+            player.hasPending.splice(0, player.hasPending.length)
             player.deletePrivateData(key);
             delete target[key];
         },
-        get:(target, key) => {
+        get: (target, key) => {
             return new Promise((resolve, reject) => {
                 var tries = 0;
                 var dataChecker = setInterval(() => {
 
-                    if(tries > 1000) reject();
-                    if(target[key] != undefined && target[key] == player.lastValue)
-                    {
+                    if (tries > 1000) {
+                        reject();
                         clearInterval(dataChecker);
-                        resolve(target[key])
                     }
-                    else
-                    {
-                        tries++;
+                    else {
+                        if (target[key] != undefined && (player.lastValues[key] == undefined || target[key] == player.lastValues[key])) {
+                            clearInterval(dataChecker);
+                            resolve(target[key])
+                        }
+                        else {
+                            tries++;
+                        }
                     }
-                    
+
                 }, 10);
             })
         }
     })
 
-    player.setPrivateData = (name, data, dataReceived, retry=1) => {
+    player.setPrivateData = (name, data, dataReceived, retry = 1) => {
 
+        var PreData;
+
+        if (typeof (data) == 'object') PreData = JSON.stringify(data);
+        else PreData = data;
+
+        var DataArray = chunkString(PreData, 10024);
+        var DataID = makeid(32);
+
+        // Sync the data to everyone on the server
+        player.call('DataReceiver:PrivateData:Init', [DataID, name])
+
+        var DataSender = new mp.Event('DataSender:InitSuccess', (_player, id) => {
+            if (id == DataID) {
+                // console.log(`6`)
+
+                for (const DataChunk of DataArray) {
+                    // console.log(`7`)
+                    // console.log(`Seding Data Chunk: ${DataChunk}`)
+                    if (DataArray.indexOf(DataChunk) == DataArray.length - 1) {
+                        _player.call('DataReceiver:Receive', [DataID, DataChunk, 1, parseInt(DataArray.indexOf(DataChunk)), typeof(data)])
+                        DataSender.destroy();
+                        break;
+                    }
+                    else {
+                        _player.call('DataReceiver:Receive', [DataID, DataChunk, 0, parseInt(DataArray.indexOf(DataChunk)), typeof(data)])
+                    }
+
+                }
+
+                var DataSenderEnd = new mp.Event('DataSender:End', (__player, endId, eventName) => {
+
+                    // console.log(`8`)
+
+                    console.log(`Data Tansmission end request: ${id} - ${endId} - ${eventName} - ${name}`)
+
+                    if (id == endId && eventName == name) {
+                        console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${name}`)
+
+                        if (player.privateData[name] == undefined) player.privateData[name] = data;
+                        else {
+                            delete player.privateData[name];
+                            player.privateData[name] = data;
+                        }
+
+                        DataSenderEnd.destroy();
+                        DataSenderFailed.destroy();
+                        DataSender.destroy();
+
+                        if (dataReceived) dataReceived();
+                    }
+
+                })
+
+
+
+                var DataSenderFailed = new mp.Event('DataSender:Failed', (__player, endId, eventName, errorCode) => {
+
+                    // console.log(`9`)
+
+                    console.log(`Data Tansmission fail request: ${endId}`)
+
+                    if (id == endId && eventName == name) {
+                        console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${name}`)
+
+                        if (retry) {
+                            console.log(`Retrying ...`)
+                            if (dataReceived) player.setPrivateData(name, data, dataReceived);
+                            else player.setPrivateData(name, data);
+                        }
+
+                        DataSenderEnd.destroy();
+                        DataSenderFailed.destroy();
+
+                    }
+
+                })
+
+
+            }
+        })
+
+    }
+
+
+    player.setPrivateDataAsync = (name, data) => {
+
+        return new Promise(res => {
             var PreData;
 
-            if(typeof(data) == 'object') PreData = JSON.stringify(data);
+            if (typeof (data) == 'object') PreData = JSON.stringify(data);
             else PreData = data;
 
             var DataArray = chunkString(PreData, 10024);
@@ -310,16 +463,13 @@ mp.events.add('playerJoin', (player) => {
             player.call('DataReceiver:PrivateData:Init', [DataID, name])
 
             var DataSender = new mp.Event('DataSender:InitSuccess', (_player, id) => {
-                if (id == DataID) 
-                {
+                if (id == DataID) {
                     // console.log(`6`)
 
-                    for (const DataChunk of DataArray) 
-                    {
+                    for (const DataChunk of DataArray) {
                         // console.log(`7`)
                         // console.log(`Seding Data Chunk: ${DataChunk}`)
-                        if (DataArray.indexOf(DataChunk) == DataArray.length - 1) 
-                        {
+                        if (DataArray.indexOf(DataChunk) == DataArray.length - 1) {
                             _player.call('DataReceiver:Receive', [DataID, DataChunk, 1, DataArray.indexOf(DataChunk)])
                             DataSender.destroy();
                             break;
@@ -330,64 +480,59 @@ mp.events.add('playerJoin', (player) => {
 
                     }
 
-                var DataSenderEnd = new mp.Event('DataSender:End', (__player, endId, eventName) => {
+                    var DataSenderEnd = new mp.Event('DataSender:End', (__player, endId, eventName) => {
 
-                    // console.log(`8`)
+                        // console.log(`8`)
 
-                    // console.log(`Data Tansmission end request: ${id} - ${endId} - ${eventName} - ${name}`)
+                        // console.log(`Data Tansmission end request: ${id} - ${endId} - ${eventName} - ${name}`)
 
-                    if (id == endId && eventName == name) {
-                        // console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${name}`)
-                        
-                        if(player.privateData[name] == undefined) player.privateData[name] = data;
-                        else
-                        {
-                            delete player.privateData[name];
-                            player.privateData[name] = data;
+                        if (id == endId && eventName == name) {
+                            // console.log(`Data Tansmission ended! ${id} - ${endId} - ${eventName}, ${name}`)
+
+                            if (player.privateData[name] == undefined) player.privateData[name] = data;
+                            else {
+                                delete player.privateData[name];
+                                player.privateData[name] = data;
+                            }
+
+                            DataSenderEnd.destroy();
+                            DataSenderFailed.destroy();
+                            DataSender.destroy();
+
+                            res(true);
                         }
 
-                        DataSenderEnd.destroy();
-                        DataSenderFailed.destroy();
-                        DataSender.destroy();
-
-                        if(dataReceived) dataReceived();
-                    }
-
-                })
+                    })
 
 
-                var DataSenderFailed = new mp.Event('DataSender:Failed', (__player, endId, eventName, errorCode) => {
+                    var DataSenderFailed = new mp.Event('DataSender:Failed', (__player, endId, eventName, errorCode) => {
 
-                    // console.log(`9`)
+                        // console.log(`9`)
 
-                    // console.log(`Data Tansmission fail request: ${endId}`)
+                        // console.log(`Data Tansmission fail request: ${endId}`)
 
-                    if (id == endId && eventName == name) {
-                        // console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${name}`)
-                        
-                        if(retry)
-                        {
-                            // console.log(`Retrying ...`)
-                            if(dataReceived) player.setPrivateData(name, data, dataReceived);
-                            else player.setPrivateData(name, data);
+                        if (id == endId && eventName == name) {
+                            // console.log(`Data Tansmission Failed! ${id} - ${endId} - ${eventName}, ${name}`)
+
+                            player.setPrivateDataAsync(name, data)
+
+                            DataSenderEnd.destroy();
+                            DataSenderFailed.destroy();
+
                         }
 
-                        DataSenderEnd.destroy();
-                        DataSenderFailed.destroy();
+                    })
 
-                    }
 
-                })
-                
-
-            }
+                }
+            })
         })
 
     }
 
     player.deletePrivateData = (name) => {
 
-        if(player.privateData[name]) delete player.privateData[name];
+        if (player.privateData[name]) delete player.privateData[name];
         player.call('DataReceiver:PrivateData:Delete', [name]);
 
     }
@@ -445,16 +590,13 @@ mp.events.add("playerQuit", (player, exitType, reason) => {
     var EntityIndexes = DataHandler_GetAllEntityDataOfType(player.id, 'player');
     console.log(`Player ${player.name} left, indexes: ${JSON.stringify(EntityIndexes)}`)
 
-    if(EntityIndexes.length > 0)
-    {
-        for(const index of EntityIndexes)
-        {
+    if (EntityIndexes.length > 0) {
+        for (const index of EntityIndexes) {
             const EntityDataObject = EntitySharedVariables[index];
-            if(EntityDataObject != undefined)
-            {
+            if (EntityDataObject != undefined) {
                 mp.players.call('DataReceiver:SharedData:Delete', ['player', EntityDataObject.id, EntityDataObject.name]);
                 EntitySharedVariables.splice(index, 1);
-                console.log(`Deleted player shared data of name ${EntityDataObject.name}`)
+                // console.log(`Deleted player shared data of name ${EntityDataObject.name}`)
             }
         }
     }
@@ -536,8 +678,7 @@ function DataHadnler_DoesEntityOfTypeHasData(entityId, entityType, dataName) {
     return -1;
 }
 
-function DataHandler_GetAllEntityDataOfType(entityId, entityType)
-{
+function DataHandler_GetAllEntityDataOfType(entityId, entityType) {
     // console.log(JSON.stringify(EntitySharedVariables))
     var ReturnArray = [];
     for (const PlayerDataObject of EntitySharedVariables) {
@@ -575,86 +716,5 @@ function chunkString(str, size) {
 } */
 
 const timer = ms => new Promise(res => setTimeout(res, ms))
-
-
-
-// mp.events.addCommand("test", async (player, fullText, somevar) => {
-
-//     var someTestBigData = {
-//         somedata:somevar
-//     }
-
-//     /* player.setBigVariable('clothes', BigData, () => {
-//         console.log(`Data`)
-//     }) */
-
-//     // player.setBigVariable('clothes', BigData);
-
-//     // player.callBig('GetBigData', [BigData])
-
-//     // player.setPrivateData('clothes', BigData, () => {
-//     //     console.log(`Data is final`)
-//     // })
-
-//     try
-//     {
-//         player.pdata.clothes = BigData;
-//     }
-//     catch(e)
-//     {
-//         console.log(`Error: ${e}`)
-//     }
-
-//     try
-//     {
-//         var Clothes = await player.pdata.clothes;
-//         console.log(`Clohtes: ${Clothes}`);
-//     }catch(e)
-//     {
-//         console.log(`failed to fetch the value`);
-//     }
-
-//     // player.pdata.clothes.then((Clothes) => {
-//     //     console.log(`Clohtes: ${Clothes}`);
-//     // })
-
-
-
-// });
-
-
-// mp.events.addCommand("test2", async (player, fullText) => {
-
-//     // console.log(player.pdata.clothes)
-//     // player.call('TestPrivateData');
-
-//     try
-//     {
-//         player.pdata.test2 = BigData;
-//     }
-//     catch(e)
-//     {
-//         console.log(`Error: ${e}`)
-//     }
-
-//     try
-//     {
-//         var Clothes = await player.pdata.test2;
-//         console.log(`Clohtes2: ${Clothes}`);
-//     }catch(e)
-//     {
-//         console.log(`failed to fetch the value`);
-//     }
-
-
-
-// });
-
-// mp.events.addCommand("test3", (player, fullText) => {
-
-//     // player.deletePrivateData('clothes')
-//     delete player.pdata.clothes;
-
-// });
 
 
