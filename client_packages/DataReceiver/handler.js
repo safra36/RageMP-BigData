@@ -407,6 +407,7 @@ function DataHandler_CreateDataStructure(BucketArray, type="object")
             {
                 // mp.game.graphics.notify(`45`);
                 var BucketClone = await DataHandler_Sort(BucketArray);
+                if (BucketClone === undefined) throw new Error("Whoops!");
                 // mp.game.graphics.notify(`4: ${BucketClone}`);
 
                 for(const chunk of BucketClone)
@@ -562,7 +563,8 @@ function DataHandler_Sort(BucketArray)
                     // mp.game.graphics.notify(`13`);
                     // mp.console.logInfo("110", false, false);
                     // mp.game.graphics.notify(`Rejected`);
-                    reject();
+                    // reject();
+                    resolve(undefined)
                     return;
                 }
             }
